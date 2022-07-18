@@ -1,0 +1,89 @@
+pipeline{
+    
+agent any
+
+tools{
+    maven "maven3.8.5"
+}
+
+stages{
+    
+    //get the code from github
+    stage('CheckoutCode'){
+        steps{
+            slacknotifications("STARTED")
+            git branch: 'development', 
+        credentialsId: '8591c5c6-4b57-4739-bcfc-363510c00960', 
+        url: 'https://github.com/kushpvgdevops/maven-web-application.git'
+        }
+    }
+    
+    //do the build
+    stage('Build'){
+        steps{
+            sh "mvn clean package"
+        }
+    }
+    
+    //execute sonarqube report
+    stage('ExecuteSonarQubeReport'){
+        steps{
+            sh "mvn sonar:sonar"
+        }
+        
+    }
+    
+    //upload artifacts into Nexus Repo
+    stage('UploadArtifactsintoNexus'){
+        steps{
+        sh "mvn deploy"
+    }
+    }
+    
+    //deploy application into tomcat server
+    stage('DeployAppIntoTomcatServer'){
+        steps{
+            sshagent(['c82d8db2-1c5b-4787-a113-9d7f62175bf1']) {
+        sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@3.111.188.88:/opt/apache-tomcat-9.0.64/webapps/"
+        }
+        }
+        
+    }
+}//stages closing
+post {
+  success {
+      slacknotifications(currentBuild.result)
+    // One or more steps need to be included within each condition's block.
+  }
+  failure {
+      slacknotifications(currentBuild.result)
+    // One or more steps need to be included within each condition's block.
+  }
+}
+}//pipeine closing
+
+def slacknotifications(String buildStatus = 'STARTED') {
+  
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+
+  
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def subject = "${buildStatus}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+  def summary = "${subject} (${env.BUILD_URL})"
+
+  
+  if (buildStatus == 'STARTED') {
+    color = 'ORANGE'
+    colorCode = '#FFA500'
+  } else if (buildStatus == 'SUCCESSFUL') {
+    color = 'GREEN'
+    colorCode = '#00FF00'
+  } else {
+    color = 'RED'
+    colorCode = '#FF0000'
+  }
+
+  
+  slackSend (color: colorCode, message: summary)
+}
