@@ -35,7 +35,7 @@ node
     throw e
     }
     finally{
-    stacknotification(currentBuild.result)
+    slacknotification(currentBuild.result)
     }
 }
 
