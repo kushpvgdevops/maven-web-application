@@ -8,6 +8,7 @@ node
     echo "The node label is: ${env.NODE_LABELS}"
     echo "The ebuild number is: ${env.BUILD_NUMBER}"
     try{
+        slacknotifications("STARTED")
         
     stage('CheckoutCode'){
         git branch: 'development', 
