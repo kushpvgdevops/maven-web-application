@@ -39,7 +39,7 @@ node
     }
 }
 
-def stacknotifications(String buildStatus = 'STARTED') {
+def slacknotifications(String buildStatus = 'STARTED') {
   
   buildStatus =  buildStatus ?: 'SUCCESSFUL'
 
